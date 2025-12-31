@@ -226,6 +226,20 @@ const drawFortune = () => {
   }, 500)
 }
 
+// 集成摇一摇
+const onDeviceShake = () => {
+  if (!todayFortune.value) {
+    drawFortune()
+  }
+}
+const { enableShake } = useShake(onDeviceShake)
+
+// 按钮点击处理 (同时请求权限)
+const handleShakeDraw = async () => {
+  await enableShake()
+  drawFortune()
+}
+
 onMounted(() => {
   checkDailyFortune()
 })
