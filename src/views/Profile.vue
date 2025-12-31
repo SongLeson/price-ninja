@@ -161,6 +161,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useProductStore } from '../stores/products'
 import { storeToRefs } from 'pinia'
 import { getRandomFortune } from '../utils/fortunes'
+import { useShake } from '../composables/useShake'  // Fix: Import useShake
 
 const productStore = useProductStore()
 const { products } = storeToRefs(productStore) // Keep products for supermarketStats

@@ -85,11 +85,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, shallowRef } from 'vue' // Import shallowRef
 import Home from './views/Home.vue'
 import Notebook from './views/Notebook.vue'
 import Profile from './views/Profile.vue'
 import OnboardingTour from './components/OnboardingTour.vue'
 
-const currentView = ref(Home)
+// 使用 shallowRef 避免 Vue 尝试将组件对象变成响应式，消除性能警告
+const currentView = shallowRef(Home)
 </script>
