@@ -1,245 +1,192 @@
 <template>
-  <div class="space-y-8 animate-slide-up">
-    <!-- 标题不再需要，已移至 Header -->
-
-    <!-- 比价卡片 - 左右布局 (手机上下布局) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="space-y-8 animate-slide-up pb-32">
+    <!-- 商品卡片区域 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
       
       <!-- 商品 A (左) -->
-      <div
+      <div 
         :class="[
-          'relative transition-all duration-500 transform',
-          isWinner(productA, productB) ? 'scale-105 z-10' : 'scale-100 z-0'
+          'relative p-6 transition-all duration-500',
+          isWinner(productA, productB) ? 'card-strong scale-105 z-20 ring-2 ring-emerald-400' : 'card'
         ]"
       >
-        <div :class="[
-          isWinner(productA, productB) ? 'card-strong' : 'card',
-          'p-6 relative overflow-hidden'
-        ]">
-          <!-- 胜者光效背景 -->
-          <div v-if="isWinner(productA, productB)" class="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-transparent pointer-events-none"></div>
-
-          <div class="relative flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-slate-700 flex items-center gap-2">
-              <span class="w-2 h-6 bg-emerald-400 rounded-full"></span>
-              商品 A
-            </h3>
-            <!-- Winner 标签 -->
-            <div
-              v-if="isWinner(productA, productB)"
-              class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg shadow-emerald-200 animate-pulse-soft flex items-center gap-1"
-            >
-              <span>🏆</span> 推荐
-            </div>
-            <!-- 重置按钮 (仅当有输入且未获胜时显示在右上角，或作为次要操作) -->
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center gap-2">
+            <h2 class="text-xl font-black text-slate-800 tracking-tight">商品 A</h2>
+            <!-- 语音按钮 A -->
             <button 
-              v-if="hasInput(productA) && !isWinner(productA, productB)"
-              @click="resetProduct(productA)"
-              class="text-slate-300 hover:text-slate-400"
+              @click="startListening('A')"
+              :class="[
+                'p-2 rounded-full transition-all active:scale-95',
+                listeningTarget === 'A' ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-100 text-slate-400 hover:text-emerald-500'
+              ]"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
             </button>
           </div>
+          <button 
+            v-if="hasInput(productA)" 
+            @click="resetProduct(productA)"
+            class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-slate-200 transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
 
-          <div class="space-y-5 relative">
-            <!-- 价格输入 -->
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                价格 (元)
-              </label>
-              <input
-                type="number"
-                inputmode="decimal"
-                v-model.number="productA.price"
-                placeholder="0.00"
-                class="input-minimal"
-                step="0.01"
-              />
-            </div>
-
-            <!-- 分量输入 -->
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                分量
-              </label>
-              <div class="flex gap-3">
-                <input
-                  type="number"
-                  inputmode="decimal"
-                  v-model.number="productA.amount"
-                  placeholder="0"
-                  class="input-minimal flex-1"
-                  step="0.1"
-                />
-                <select
-                  v-model="productA.unit"
-                  class="w-24 bg-slate-50 rounded-2xl border-none font-bold text-slate-600 focus:ring-2 focus:ring-emerald-400 outline-none p-0 text-center"
-                >
-                  <option value="g">克</option>
-                  <option value="kg">千克</option>
-                  <option value="lb">磅</option>
-                  <option value="ml">毫升</option>
-                  <option value="L">升</option>
-                  <option value="个">个</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- 单价显示 -->
-            <div
-              v-if="productA.unitPrice"
-              class="pt-4 border-t border-slate-50"
+        <div class="space-y-5">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">价格 (元)</label>
+            <input 
+              v-model.number="productA.price" 
+              type="number" 
+              placeholder="0.00" 
+              class="input-minimal"
             >
-              <div class="flex items-baseline justify-between">
-                <span class="text-xs text-slate-400">单价</span>
-                <div class="text-right">
-                  <span class="text-2xl font-bold text-slate-800">
-                    ¥{{ productA.unitPrice.toFixed(2) }}
-                  </span>
-                  <span class="text-xs text-slate-400 ml-1">/{{ getNormalizedUnit(productA.unit) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 优惠力度 (仅展示在胜者卡片内) -->
-            <div
-              v-if="isWinner(productA, productB)"
-              class="mt-4 bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100"
-            >
-              <div class="text-xs font-bold text-emerald-600 uppercase mb-1">超值优惠</div>
-              <div class="text-3xl font-extrabold text-emerald-600 tracking-tight">便宜 {{ savingsPercent }}%</div>
-              <div class="text-xs text-emerald-500 mt-1 font-medium">省 ¥{{ savingsAmount.toFixed(2) }} 元</div>
+          </div>
+          
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">分量</label>
+            <div class="flex gap-3">
+              <input 
+                v-model.number="productA.amount" 
+                type="number" 
+                placeholder="0" 
+                class="input-minimal flex-1"
+              >
+              <select 
+                v-model="productA.unit" 
+                class="bg-slate-50 rounded-2xl px-3 font-bold text-slate-600 border-none focus:ring-2 focus:ring-emerald-400 outline-none w-20 text-center appearance-none"
+              >
+                <option value="g">克</option>
+                <option value="kg">千克</option>
+                <option value="lb">磅</option>
+                <option value="ml">毫升</option>
+                <option value="L">升</option>
+                <option value="个">个</option>
+              </select>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 中间 VS (可选，增加趣味性) -->
-      <div class="hidden md:flex items-center justify-center absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
-        <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-300 font-black shadow-inner">VS</div>
+        <!-- 结果展示 A -->
+        <div v-if="productA.unitPrice" class="mt-6 pt-4 border-t border-slate-50">
+          <div class="flex justify-between items-baseline">
+            <span class="text-xs text-slate-400">单价</span>
+            <span class="text-2xl font-black text-slate-800">
+              <small class="text-sm font-normal text-slate-400">¥</small>
+              {{ productA.unitPrice.toFixed(2) }}
+              <span class="text-xs font-medium text-slate-400">/ {{ getNormalizedUnit(productA.unit) }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- 胜者标签 -->
+        <div v-if="isWinner(productA, productB)" class="absolute -top-3 -right-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-4 py-1.5 rounded-full shadow-lg shadow-emerald-200 text-xs font-bold flex items-center gap-1 animate-pulse">
+           <span>🏆 推荐</span>
+        </div>
+        
+        <!-- 节省标签 -->
+        <div v-if="isWinner(productA, productB) && savingsPercent > 0" class="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+           <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm opacity-90">
+             便宜 {{ savingsPercent }}%
+           </span>
+        </div>
       </div>
 
       <!-- 商品 B (右) -->
-      <div
+      <div 
         :class="[
-          'relative transition-all duration-500 transform',
-          isWinner(productB, productA) ? 'scale-105 z-10' : 'scale-100 z-0'
+          'relative p-6 transition-all duration-500',
+          isWinner(productB, productA) ? 'card-strong scale-105 z-20 ring-2 ring-emerald-400' : 'card'
         ]"
       >
-        <div :class="[
-          isWinner(productB, productA) ? 'card-strong' : 'card',
-          'p-6 relative overflow-hidden'
-        ]">
-           <!-- 胜者光效背景 -->
-           <div v-if="isWinner(productB, productA)" class="absolute inset-0 bg-gradient-to-br from-emerald-100/50 to-transparent pointer-events-none"></div>
-
-          <div class="relative flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-slate-700 flex items-center gap-2">
-              <span class="w-2 h-6 bg-blue-400 rounded-full"></span>
-              商品 B
-            </h3>
-            <!-- Winner 标签 -->
-            <div
-              v-if="isWinner(productB, productA)"
-              class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg shadow-emerald-200 animate-pulse-soft flex items-center gap-1"
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center gap-2">
+            <h2 class="text-xl font-black text-slate-800 tracking-tight">商品 B</h2>
+            <!-- 语音按钮 B -->
+            <button 
+              @click="startListening('B')"
+              :class="[
+                'p-2 rounded-full transition-all active:scale-95',
+                listeningTarget === 'B' ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-100 text-slate-400 hover:text-emerald-500'
+              ]"
             >
-              <span>🏆</span> 推荐
-            </div>
-             <!-- 重置按钮 -->
-             <button 
-              v-if="hasInput(productB) && !isWinner(productB, productA)"
-              @click="resetProduct(productB)"
-              class="text-slate-300 hover:text-slate-400"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
             </button>
           </div>
+          <button 
+            v-if="hasInput(productB)" 
+            @click="resetProduct(productB)" 
+            class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center hover:bg-slate-200 transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
 
-          <div class="space-y-5 relative">
-            <!-- 价格输入 -->
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                价格 (元)
-              </label>
-              <input
-                type="number"
-                inputmode="decimal"
-                v-model.number="productB.price"
-                placeholder="0.00"
-                class="input-minimal"
-                step="0.01"
-              />
-            </div>
-
-            <!-- 分量输入 -->
-            <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                分量
-              </label>
-              <div class="flex gap-3">
-                <input
-                  type="number"
-                  inputmode="decimal"
-                  v-model.number="productB.amount"
-                  placeholder="0"
-                  class="input-minimal flex-1"
-                  step="0.1"
-                />
-                <select
-                  v-model="productB.unit"
-                  class="w-24 bg-slate-50 rounded-2xl border-none font-bold text-slate-600 focus:ring-2 focus:ring-emerald-400 outline-none p-0 text-center"
-                >
-                  <option value="g">克</option>
-                  <option value="kg">千克</option>
-                  <option value="lb">磅</option>
-                  <option value="ml">毫升</option>
-                  <option value="L">升</option>
-                  <option value="个">个</option>
-                </select>
-              </div>
-            </div>
-
-             <!-- 单价显示 -->
-             <div
-              v-if="productB.unitPrice"
-              class="pt-4 border-t border-slate-50"
+        <div class="space-y-5">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">价格 (元)</label>
+            <input 
+              v-model.number="productB.price" 
+              type="number" 
+              placeholder="0.00" 
+              class="input-minimal"
             >
-              <div class="flex items-baseline justify-between">
-                <span class="text-xs text-slate-400">单价</span>
-                <div class="text-right">
-                  <span class="text-2xl font-bold text-slate-800">
-                    ¥{{ productB.unitPrice.toFixed(2) }}
-                  </span>
-                  <span class="text-xs text-slate-400 ml-1">/{{ getNormalizedUnit(productB.unit) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 优惠力度 (仅展示在胜者卡片内) -->
-            <div
-              v-if="isWinner(productB, productA)"
-              class="mt-4 bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100"
-            >
-              <div class="text-xs font-bold text-emerald-600 uppercase mb-1">超值优惠</div>
-              <div class="text-3xl font-extrabold text-emerald-600 tracking-tight">便宜 {{ savingsPercent }}%</div>
-              <div class="text-xs text-emerald-500 mt-1 font-medium">省 ¥{{ savingsAmount.toFixed(2) }} 元</div>
+          </div>
+          
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">分量</label>
+            <div class="flex gap-3">
+              <input 
+                v-model.number="productB.amount" 
+                type="number" 
+                placeholder="0" 
+                class="input-minimal flex-1"
+              >
+              <select 
+                v-model="productB.unit" 
+                class="bg-slate-50 rounded-2xl px-3 font-bold text-slate-600 border-none focus:ring-2 focus:ring-emerald-400 outline-none w-20 text-center appearance-none"
+              >
+                <option value="g">克</option>
+                <option value="kg">千克</option>
+                <option value="lb">磅</option>
+                <option value="ml">毫升</option>
+                <option value="L">升</option>
+                <option value="个">个</option>
+              </select>
             </div>
           </div>
+        </div>
+
+        <!-- 结果展示 B -->
+        <div v-if="productB.unitPrice" class="mt-6 pt-4 border-t border-slate-50">
+           <div class="flex justify-between items-baseline">
+            <span class="text-xs text-slate-400">单价</span>
+            <span class="text-2xl font-black text-slate-800">
+              <small class="text-sm font-normal text-slate-400">¥</small>
+              {{ productB.unitPrice.toFixed(2) }}
+              <span class="text-xs font-medium text-slate-400">/ {{ getNormalizedUnit(productB.unit) }}</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- 胜者标签 -->
+        <div v-if="isWinner(productB, productA)" class="absolute -top-3 -right-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-4 py-1.5 rounded-full shadow-lg shadow-emerald-200 text-xs font-bold flex items-center gap-1 animate-pulse">
+           <span>🏆 推荐</span>
+        </div>
+        
+        <!-- 节省标签 -->
+        <div v-if="isWinner(productB, productA) && savingsPercent > 0" class="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
+           <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm opacity-90">
+             便宜 {{ savingsPercent }}%
+           </span>
         </div>
       </div>
     </div>
-
-    <!-- 单位不匹配警告 -->
-    <div v-if="hasAnyInput && !canCompare" class="card bg-orange-50 border border-orange-200 p-4 animate-slide-up">
-      <div class="flex items-start gap-3">
-        <div class="text-2xl">⚠️</div>
-        <div>
-          <div class="font-bold text-orange-800 mb-1">单位类型不匹配</div>
-          <p class="text-sm text-orange-700">
-            请确保比较的是同类单位（如重量 vs 重量）。
-          </p>
-        </div>
-      </div>
+    
+    <!-- 全局提示框 (Toast) -->
+    <div v-if="toastMsg" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 bg-slate-800/90 text-white px-6 py-3 rounded-full shadow-xl backdrop-blur-md text-sm font-bold animate-slide-up">
+      {{ toastMsg }}
     </div>
 
     <!-- 结算弹窗 (金币雨效果) -->
@@ -283,13 +230,18 @@
     <div v-if="!hasAnyInput" class="text-center py-12 opacity-60">
       <div class="text-5xl mb-4 grayscale opacity-50">🛒</div>
       <p class="text-slate-400 font-medium">输入价格与分量，自动计算单价</p>
+      <div class="text-xs text-slate-300 mt-2 flex items-center justify-center gap-1">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+        试试点击麦克风说 "20块500克"
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useProductStore } from '../stores/products'
+import { parseVoiceResult } from '../utils/voiceParser'
 
 const productStore = useProductStore()
 
@@ -306,6 +258,80 @@ const productB = ref({
   unit: 'g',
   unitPrice: null
 })
+
+// 语音识别相关
+const listeningTarget = ref(null) // 'A' or 'B'
+const toastMsg = ref('')
+let recognition = null
+
+// 初始化语音识别
+const initSpeechRecognition = () => {
+  if ('webkitSpeechRecognition' in window) {
+    recognition = new window.webkitSpeechRecognition()
+    recognition.continuous = false
+    recognition.lang = 'zh-CN'
+    
+    recognition.onstart = () => {
+      showToast(listeningTarget.value === 'A' ? '请说出商品A的信息...' : '请说出商品B的信息...')
+    }
+    
+    recognition.onend = () => {
+      listeningTarget.value = null
+    }
+    
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      showToast(`识别到: "${transcript}"`)
+      handleVoiceResult(transcript)
+    }
+    
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event.error)
+      listeningTarget.value = null
+      showToast('语音识别失败，请重试')
+    }
+  } else {
+    showToast('抱歉，您的浏览器不支持语音识别')
+  }
+}
+
+// 开始监听
+const startListening = (target) => {
+  if (listeningTarget.value) return // 正在录音中
+  
+  if (!recognition) initSpeechRecognition()
+  
+  if (recognition) {
+    listeningTarget.value = target
+    try {
+      recognition.start()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+}
+
+// 处理语音结果
+const handleVoiceResult = (text) => {
+  const result = parseVoiceResult(text)
+  const target = listeningTarget.value === 'A' ? productA.value : productB.value
+  
+  if (result.price) target.price = result.price
+  if (result.amount) target.amount = result.amount
+  if (result.unit) target.unit = result.unit
+  
+  if (!result.price && !result.amount) {
+    showToast('没听清，请说 "20块500克"')
+  }
+}
+
+// 显示 Toast
+const showToast = (msg, duration = 3000) => {
+  toastMsg.value = msg
+  setTimeout(() => {
+    toastMsg.value = ''
+  }, duration)
+}
 
 // 奖励动画状态
 const showReward = ref(false)
