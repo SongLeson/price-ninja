@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 
-export function useShake(onShake, threshold = 60) {
+export function useShake(onShake, threshold = 100) {
   let lastX = 0
   let lastY = 0
   let lastZ = 0

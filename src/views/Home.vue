@@ -243,7 +243,7 @@
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
         试试点击麦克风说 "20块500克"
       </div>
-      <div class="mt-8 text-[10px] text-slate-200 font-mono">v1.2.1 (Sensitivity Fix)</div>
+      <div class="mt-8 text-[10px] text-slate-200 font-mono">v1.3.0 (Fortune Update)</div>
     </div>
   </div>
 </template>

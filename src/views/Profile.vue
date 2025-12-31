@@ -76,25 +76,28 @@
       
       <div class="relative z-10">
         <h3 class="text-slate-800 font-bold mb-4 flex items-center gap-2">
-          <span class="text-xl">🔮</span> 每日一签
+          <span class="text-xl">🔮</span> 摇签占卜
         </h3>
 
-        <!-- 未抽签状态 -->
+        <!-- 抽签中状态 -->
         <div v-if="!todayFortune" class="text-center py-4">
-          <div class="text-6xl mb-4 animate-bounce cursor-pointer hover:scale-110 transition-transform" @click="drawFortune">
+          <div class="text-6xl mb-4 animate-spin-slow">
             🎋
           </div>
-          <p class="text-slate-400 text-sm mb-4">今日财运如何？抽个签看看！</p>
-          <button 
-            @click="drawFortune"
-            class="px-6 py-2 bg-slate-900 text-white rounded-full font-bold text-sm shadow-lg hover:bg-slate-800 active:scale-95 transition-all"
-          >
-            摇一摇求签
-          </button>
+          <p class="text-slate-400 text-sm mb-4">签文生成中...</p>
         </div>
 
         <!-- 已抽签状态 -->
         <div v-else class="animate-flip-in-x">
+          <div class="text-center mb-3">
+            <button 
+              @click="handleShakeDraw"
+              :disabled="isDrawing"
+              class="px-4 py-1.5 bg-purple-50 text-purple-600 rounded-full text-xs font-bold hover:bg-purple-100 active:scale-95 transition-all disabled:opacity-50"
+            >
+              📳 再摇一次
+            </button>
+          </div>
           <div class="flex items-start gap-4">
             <div class="bg-slate-50 p-3 rounded-2xl text-4xl shadow-inner border border-slate-100 flex-shrink-0">
               {{ todayFortune.icon }}
@@ -196,42 +199,32 @@ const maxCount = computed(() => {
   return Math.max(...supermarketStats.value.map(s => s.count))
 })
 
-// 每日运势
+// 每日运势 (改为可重复摇签)
 const todayFortune = ref(null)
-
-const checkDailyFortune = () => {
-  const lastDate = localStorage.getItem('price-ninja-fortune-date')
-  const today = new Date().toLocaleDateString()
-  
-  if (lastDate === today) {
-    const savedFortune = localStorage.getItem('price-ninja-fortune-data')
-    if (savedFortune) {
-      todayFortune.value = JSON.parse(savedFortune)
-    }
-  }
-}
+const isDrawing = ref(false) // 防止连续触发
 
 const drawFortune = () => {
-  // 简单的抽签动画模拟
+  if (isDrawing.value) return // 防抖
+  
+  isDrawing.value = true
+  
+  // 翻转动画：先隐藏当前签
   todayFortune.value = null
+  
   setTimeout(() => {
     const fortune = getRandomFortune()
     todayFortune.value = fortune
     
-    // 保存
-    localStorage.setItem('price-ninja-fortune-date', new Date().toLocaleDateString())
-    localStorage.setItem('price-ninja-fortune-data', JSON.stringify(fortune))
-    
     // 震动反馈
-    if (navigator.vibrate) navigator.vibrate(50)
-  }, 500)
+    if (navigator.vibrate) navigator.vibrate([50, 30, 50])
+    
+    isDrawing.value = false
+  }, 600) // 动画时长
 }
 
-// 集成摇一摇
+// 集成摇一摇 (每次摇动都抽新签)
 const onDeviceShake = () => {
-  if (!todayFortune.value) {
-    drawFortune()
-  }
+  drawFortune()
 }
 const { enableShake } = useShake(onDeviceShake)
 
@@ -241,9 +234,12 @@ const handleShakeDraw = async () => {
   drawFortune()
 }
 
+// 初始化时自动抽一次签
 onMounted(() => {
-  checkDailyFortune()
+  drawFortune()
 })
+
+
 
 // 成就系统
 const badges = computed(() => [
