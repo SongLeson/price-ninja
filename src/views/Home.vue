@@ -42,6 +42,21 @@
               placeholder="0.00" 
               class="input-minimal"
             >
+            <!-- 促销粉碎机 A -->
+            <div class="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <button 
+                v-for="promo in promoTypes" 
+                :key="promo.id"
+                @click="productA.promo = promo.id"
+                :class="['flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-bold border transition-all', 
+                  productA.promo === promo.id 
+                    ? 'bg-emerald-100 text-emerald-600 border-emerald-200 shadow-sm scale-105' 
+                    : 'bg-white text-slate-400 border-slate-100'
+                ]"
+              >
+                {{ promo.icon }} {{ promo.label }}
+              </button>
+            </div>
           </div>
           
           <div>
@@ -71,9 +86,12 @@
         <!-- 结果展示 A -->
         <div v-if="productA.unitPrice" class="mt-6 pt-4 border-t border-slate-50">
           <div class="flex justify-between items-baseline">
-            <span class="text-xs text-slate-400">单价</span>
-            <span class="text-2xl font-black text-slate-800">
-              <small class="text-sm font-normal text-slate-400">¥</small>
+            <span class="text-xs text-slate-400">
+              单价
+              <span v-if="productA.promo !== 'none'" class="ml-1 text-[10px] text-slate-300 line-through decoration-slate-300">原:{{ calculateUnitPrice({...productA, promo: 'none'}).toFixed(2) }}</span>
+            </span>
+            <span :class="['text-2xl font-black transition-all', productA.promo !== 'none' ? 'text-emerald-500 scale-110 drop-shadow-sm' : 'text-slate-800']">
+              <small class="text-sm font-normal opacity-70">¥</small>
               {{ productA.unitPrice.toFixed(2) }}
               <span class="text-xs font-medium text-slate-400">/ {{ getNormalizedUnit(productA.unit) }}</span>
             </span>
@@ -132,6 +150,21 @@
               placeholder="0.00" 
               class="input-minimal"
             >
+            <!-- 促销粉碎机 B -->
+            <div class="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <button 
+                v-for="promo in promoTypes" 
+                :key="promo.id"
+                @click="productB.promo = promo.id"
+                :class="['flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-bold border transition-all', 
+                  productB.promo === promo.id 
+                    ? 'bg-emerald-100 text-emerald-600 border-emerald-200 shadow-sm scale-105' 
+                    : 'bg-white text-slate-400 border-slate-100'
+                ]"
+              >
+                {{ promo.icon }} {{ promo.label }}
+              </button>
+            </div>
           </div>
           
           <div>
@@ -161,9 +194,12 @@
         <!-- 结果展示 B -->
         <div v-if="productB.unitPrice" class="mt-6 pt-4 border-t border-slate-50">
            <div class="flex justify-between items-baseline">
-            <span class="text-xs text-slate-400">单价</span>
-            <span class="text-2xl font-black text-slate-800">
-              <small class="text-sm font-normal text-slate-400">¥</small>
+            <span class="text-xs text-slate-400">
+              单价
+              <span v-if="productB.promo !== 'none'" class="ml-1 text-[10px] text-slate-300 line-through decoration-slate-300">原:{{ calculateUnitPrice({...productB, promo: 'none'}).toFixed(2) }}</span>
+            </span>
+            <span :class="['text-2xl font-black transition-all', productB.promo !== 'none' ? 'text-emerald-500 scale-110 drop-shadow-sm' : 'text-slate-800']">
+              <small class="text-sm font-normal opacity-70">¥</small>
               {{ productB.unitPrice.toFixed(2) }}
               <span class="text-xs font-medium text-slate-400">/ {{ getNormalizedUnit(productB.unit) }}</span>
             </span>
@@ -295,10 +331,19 @@ const handleShake = async () => {
   }
 }
 
+// 促销类型定义
+const promoTypes = [
+  { id: 'none', label: '无优惠', factor: 1, icon: '🏷️' },
+  { id: 'b1g1', label: '买一送一', factor: 0.5, icon: '🎁' },
+  { id: 'snd_half', label: '第二件半价', factor: 0.75, icon: '🌓' }, // (1 + 0.5) / 2 = 0.75
+  { id: '3pcs_7z', label: '3件7折', factor: 0.7, icon: '3️⃣' }
+]
+
 const productA = ref({
   price: null,
   amount: null,
   unit: 'g',
+  promo: 'none',
   unitPrice: null
 })
 
@@ -306,6 +351,7 @@ const productB = ref({
   price: null,
   amount: null,
   unit: 'g',
+  promo: 'none',
   unitPrice: null
 })
 
@@ -387,11 +433,6 @@ const showToast = (msg, duration = 3000) => {
 const showReward = ref(false)
 const lastSavedAmount = ref(0)
 
-// 辅助函数：判断是否获胜
-const isWinner = (me, opponent) => {
-  return me.unitPrice && opponent.unitPrice && me.unitPrice < opponent.unitPrice && canCompare.value
-}
-
 // 辅助函数：是否有输入
 const hasInput = (p) => p.price || p.amount
 
@@ -400,6 +441,7 @@ const resetProduct = (p) => {
   p.price = null
   p.amount = null
   p.unitPrice = null
+  p.promo = 'none'
 }
 
 // 单位类型分类
@@ -435,20 +477,6 @@ const convertToBaseUnit = (amount, unit) => {
   return amount * (conversionRates[unit] || 1)
 }
 
-// 计算单价 (统一为每100基础单位的价格)
-const calculateUnitPrice = (product) => {
-  if (!product.price || !product.amount || product.amount <= 0) return null
-  
-  const unitType = getUnitType(product.unit)
-  
-  if (unitType === 'count') {
-    return product.price / product.amount
-  }
-  
-  const baseAmount = convertToBaseUnit(product.amount, product.unit)
-  return (product.price / baseAmount) * 100
-}
-
 // 检查两个商品单位是否可比较
 const canCompare = computed(() => {
   if (!productA.value.unit || !productB.value.unit) return true
@@ -457,12 +485,35 @@ const canCompare = computed(() => {
   return typeA === typeB
 })
 
-// 实时计算
-watch([() => productA.value.price, () => productA.value.amount, () => productA.value.unit], () => {
+// 辅助函数：判断是否获胜
+const isWinner = (me, opponent) => {
+  return me.unitPrice && opponent.unitPrice && me.unitPrice < opponent.unitPrice && canCompare.value
+}
+
+// 计算单价 (统一为每100基础单位的价格)
+const calculateUnitPrice = (product) => {
+  if (!product.price || !product.amount || product.amount <= 0) return null
+  
+  const unitType = getUnitType(product.unit)
+  
+  // 应用促销折扣
+  const promo = promoTypes.find(p => p.id === product.promo) || promoTypes[0]
+  const finalPrice = product.price * promo.factor
+  
+  if (unitType === 'count') {
+    return finalPrice / product.amount
+  }
+  
+  const baseAmount = convertToBaseUnit(product.amount, product.unit)
+  return (finalPrice / baseAmount) * 100
+}
+
+// 实时计算 (Add promo to watch)
+watch([() => productA.value.price, () => productA.value.amount, () => productA.value.unit, () => productA.value.promo], () => {
   productA.value.unitPrice = calculateUnitPrice(productA.value)
 }, { immediate: true })
 
-watch([() => productB.value.price, () => productB.value.amount, () => productB.value.unit], () => {
+watch([() => productB.value.price, () => productB.value.amount, () => productB.value.unit, () => productB.value.promo], () => {
   productB.value.unitPrice = calculateUnitPrice(productB.value)
 }, { immediate: true })
 
