@@ -207,6 +207,15 @@
 
     <!-- 全局操作栏 (重置 & 结算) -->
     <div v-if="hasAnyInput" class="flex justify-center gap-4 pt-4 animate-slide-up pb-32">
+      <!-- 模拟摇一摇 (兜底方案) -->
+      <button
+        @click="handleShake"
+        class="flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-100 shadow-sm transition-all active:scale-95 active:rotate-12"
+        title="点我模拟摇一摇"
+      >
+        <span class="text-lg">📳</span>
+      </button>
+
       <button
         @click="resetAll"
         class="flex items-center gap-2 text-slate-400 hover:text-slate-600 bg-white px-6 py-3 rounded-full shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-95"
@@ -234,6 +243,7 @@
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
         试试点击麦克风说 "20块500克"
       </div>
+      <div class="mt-8 text-[10px] text-slate-200 font-mono">v1.2.0 (HTTPS Fix)</div>
     </div>
   </div>
 </template>
@@ -242,8 +252,48 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useProductStore } from '../stores/products'
 import { parseVoiceResult } from '../utils/voiceParser'
+import { useShake } from '../composables/useShake'
 
 const productStore = useProductStore()
+
+// 设备摇一摇回调
+const onDeviceShake = () => {
+  if (hasAnyInput.value) {
+    if (navigator.vibrate) navigator.vibrate(200)
+    resetAll()
+    showToast('📳 已摇一摇清空!')
+  }
+}
+
+// 初始化 Shake 监听，并获取权限请求方法
+const { enableShake } = useShake(onDeviceShake)
+
+// 手动点击摇一摇按钮
+const handleShake = async () => {
+  // 1. 尝试请求权限 (iOS 需要用户交互触发)
+  const result = await enableShake()
+  
+  if (!result.success && result.error) {
+    // 如果失败，不仅显示 Toast，还显示具体原因
+    showToast(`⚠️ ${result.error}`)
+    // 稍微延迟一下再执行清空，让用户看到错误
+    setTimeout(() => {
+       if (hasAnyInput.value) {
+          if (navigator.vibrate) navigator.vibrate(200)
+          resetAll()
+          showToast('已强制清空')
+       }
+    }, 1500)
+    return
+  }
+  
+  // 2. 成功或无需权限，执行清空
+  if (hasAnyInput.value) {
+    if (navigator.vibrate) navigator.vibrate(200)
+    resetAll()
+    showToast('✨ 已清空')
+  }
+}
 
 const productA = ref({
   price: null,

@@ -79,14 +79,17 @@
         </button>
       </nav>
     </div>
+    <!-- 新手引导 -->
+    <OnboardingTour />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Home from './views/Home.vue'
 import Notebook from './views/Notebook.vue'
 import Profile from './views/Profile.vue'
+import OnboardingTour from './components/OnboardingTour.vue'
 
 const currentView = ref(Home)
 </script>

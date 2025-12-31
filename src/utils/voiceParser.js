@@ -18,7 +18,7 @@ const unitMap = {
 export const parseVoiceResult = (text) => {
   if (!text) return null
   
-  // 1. 预处理：将中文数字转阿拉伯数字 (可选，简单场景暂不处理，假设转换引擎已输出数字)
+  // 1. 预处理
   // 将"块"、"元"统一
   let cleanText = text.replace(/块钱?/g, '元')
   
@@ -28,23 +28,7 @@ export const parseVoiceResult = (text) => {
     unit: null
   }
 
-  // 2. 提取价格
-  // 匹配模式：数字 + (元|$)
-  // 或者 纯数字 (如果找不到单位，或者根据上下文推断)
-  // 匹配 "15.5元", "15块5"
-  
-  // 处理 "15块5" 这种口语 -> "15.5元"
-  cleanText = cleanText.replace(/(\d+)元(\d+)/, '$1.$2元')
-  
-  const priceRegex = /(\d+(\.\d+)?)(\s*元)/
-  const priceMatch = cleanText.match(priceRegex)
-  if (priceMatch) {
-    result.price = parseFloat(priceMatch[1])
-    // 从文本中移除已匹配的价格，避免混淆分量
-    cleanText = cleanText.replace(priceMatch[0], '') 
-  }
-
-  // 3. 提取分量和单位
+  // 2. 优先提取分量和单位 (避免 "20元500克" 中的 500 被误认为价格的小数或后续数字)
   // 匹配 "500克", "3斤", "2.5千克"
   const amountRegex = /(\d+(\.\d+)?)\s*(克|千克|公斤|斤|磅|毫升|升|个|瓶|包|只|件|g|kg|lb|ml|l)/i
   const amountMatch = cleanText.match(amountRegex)
@@ -58,34 +42,35 @@ export const parseVoiceResult = (text) => {
       amount = amount * 500
       result.unit = 'g'
     } else if (unitRaw === '公斤') {
-      result.unit = 'kg' // 也可以直接转 g
+      result.unit = 'kg'
     } else {
       result.unit = unitMap[unitRaw] || '个'
     }
     
     result.amount = parseFloat(amount.toFixed(2))
-  } else {
-    // 如果没有匹配到标准单位，且剩下还有数字，可能就是“个数”
-    // 例如 "10元 3个" -> 说了 3个
-    // 或者 "10元 3" -> 3可能是分量? 难以判断，暂且认为是分量如果不带单位
-    const simpleNumberRegex = /(\d+(\.\d+)?)/
-    const simpleMatch = cleanText.match(simpleNumberRegex)
-    if (simpleMatch && !result.amount) { // 只有在还没找到分量时才匹配
-       // 这是一个兜底，假设剩下的数字是分量
-       // result.amount = parseFloat(simpleMatch[1])
-       // result.unit = '个' // 默认为个
-       // 兜底策略风险较大，暂不启用，防止把价格误判
-    }
+    
+    // 关键：从文本中移除已匹配的分量，防止干扰价格提取
+    cleanText = cleanText.replace(amountMatch[0], ' ') 
   }
+
+  // 3. 提取价格
+  // 处理 "15元5" 这种口语 -> "15.5元"
+  // 必须限制第二部分只匹配 1-2 位数字，且后面不能紧跟数字 (避免匹配 "50元" 后的 "655" 如果分量没提取走)
+  cleanText = cleanText.replace(/(\d+)元(\d{1,2})(?!\d)/, '$1.$2元')
   
-  // 4. 价格兜底策略 (如果之前没匹配到 '元')
-  // 如果文本里有一个数字没被用作分量，那它可能是价格
-  if (!result.price) {
-     const remainingRegex = /(\d+(\.\d+)?)/
-     const remainingMatch = cleanText.match(remainingRegex)
-     if (remainingMatch) {
-       result.price = parseFloat(remainingMatch[1])
-     }
+  const priceRegex = /(\d+(\.\d+)?)(\s*元)/
+  const priceMatch = cleanText.match(priceRegex)
+  
+  if (priceMatch) {
+    result.price = parseFloat(priceMatch[1])
+  } else {
+    // 兜底：如果之前没匹配到 '元'，且文本里还剩下数字，那它可能是价格
+    // (前提是 分量已经被移除了)
+    const remainingRegex = /(\d+(\.\d+)?)/
+    const remainingMatch = cleanText.match(remainingRegex)
+    if (remainingMatch) {
+      result.price = parseFloat(remainingMatch[1])
+    }
   }
 
   return result

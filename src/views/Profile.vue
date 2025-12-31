@@ -70,6 +70,63 @@
       </div>
     </div>
 
+    <!-- 每日运势卡片 -->
+    <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm p-6">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+      
+      <div class="relative z-10">
+        <h3 class="text-slate-800 font-bold mb-4 flex items-center gap-2">
+          <span class="text-xl">🔮</span> 每日一签
+        </h3>
+
+        <!-- 未抽签状态 -->
+        <div v-if="!todayFortune" class="text-center py-4">
+          <div class="text-6xl mb-4 animate-bounce cursor-pointer hover:scale-110 transition-transform" @click="drawFortune">
+            🎋
+          </div>
+          <p class="text-slate-400 text-sm mb-4">今日财运如何？抽个签看看！</p>
+          <button 
+            @click="drawFortune"
+            class="px-6 py-2 bg-slate-900 text-white rounded-full font-bold text-sm shadow-lg hover:bg-slate-800 active:scale-95 transition-all"
+          >
+            摇一摇求签
+          </button>
+        </div>
+
+        <!-- 已抽签状态 -->
+        <div v-else class="animate-flip-in-x">
+          <div class="flex items-start gap-4">
+            <div class="bg-slate-50 p-3 rounded-2xl text-4xl shadow-inner border border-slate-100 flex-shrink-0">
+              {{ todayFortune.icon }}
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 :class="['font-black text-xl mb-1', todayFortune.color]">{{ todayFortune.type }}</h4>
+                  <p class="text-slate-800 font-bold mb-1">{{ todayFortune.title }}</p>
+                </div>
+                <div class="text-xs font-mono text-slate-300 bg-slate-50 px-2 py-1 rounded">
+                  {{ new Date().toLocaleDateString() }}
+                </div>
+              </div>
+              <p class="text-xs text-slate-500 leading-relaxed mb-3">{{ todayFortune.desc }}</p>
+              
+              <div class="space-y-1">
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="bg-emerald-100 text-emerald-600 px-1.5 rounded font-bold">宜</span>
+                  <span class="text-slate-600">{{ todayFortune.todo }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="bg-rose-100 text-rose-600 px-1.5 rounded font-bold">忌</span>
+                  <span class="text-slate-600">{{ todayFortune.notTodo }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 成就徽章 -->
     <div class="card p-6">
       <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -100,12 +157,16 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useProductStore } from '../stores/products'
 import { storeToRefs } from 'pinia'
+import { getRandomFortune } from '../utils/fortunes'
 
 const productStore = useProductStore()
-const { userStats, ninjaRank, products } = storeToRefs(productStore)
+const { products } = storeToRefs(productStore) // Keep products for supermarketStats
+
+const userStats = computed(() => productStore.userStats)
+const ninjaRank = computed(() => productStore.ninjaRank)
 
 // 计算升级进度
 const progressToNextLevel = computed(() => {
@@ -134,48 +195,83 @@ const maxCount = computed(() => {
   return Math.max(...supermarketStats.value.map(s => s.count))
 })
 
+// 每日运势
+const todayFortune = ref(null)
+
+const checkDailyFortune = () => {
+  const lastDate = localStorage.getItem('price-ninja-fortune-date')
+  const today = new Date().toLocaleDateString()
+  
+  if (lastDate === today) {
+    const savedFortune = localStorage.getItem('price-ninja-fortune-data')
+    if (savedFortune) {
+      todayFortune.value = JSON.parse(savedFortune)
+    }
+  }
+}
+
+const drawFortune = () => {
+  // 简单的抽签动画模拟
+  todayFortune.value = null
+  setTimeout(() => {
+    const fortune = getRandomFortune()
+    todayFortune.value = fortune
+    
+    // 保存
+    localStorage.setItem('price-ninja-fortune-date', new Date().toLocaleDateString())
+    localStorage.setItem('price-ninja-fortune-data', JSON.stringify(fortune))
+    
+    // 震动反馈
+    if (navigator.vibrate) navigator.vibrate(50)
+  }, 500)
+}
+
+onMounted(() => {
+  checkDailyFortune()
+})
+
 // 成就系统
 const badges = computed(() => [
   { 
     id: 1, 
     name: '初出茅庐', 
-    icon: '🌱', 
-    desc: '记录第1个商品', 
-    unlocked: userStats.value.productsRecorded >= 1 
+    icon: '🐣', 
+    desc: '第一次省钱', 
+    unlocked: userStats.value.totalSaved > 0 
   },
   { 
     id: 2, 
     name: '省钱达人', 
     icon: '💰', 
-    desc: '累计省下100元', 
+    desc: '累计省100元', 
     unlocked: userStats.value.totalSaved >= 100 
   },
   { 
     id: 3, 
-    name: '排雷专家', 
-    icon: '💣', 
-    desc: '避开3个坑', 
-    unlocked: userStats.value.productsAvoided >= 3 
+    name: '精打细算', 
+    icon: '🧮', 
+    desc: '记录50次商品', 
+    unlocked: userStats.value.productsRecorded >= 50 
   },
   { 
     id: 4, 
     name: '火眼金睛', 
-    icon: '👁️', 
-    desc: '累计记录20个商品', 
-    unlocked: userStats.value.productsRecorded >= 20 
+    icon: '👀', 
+    desc: '避雷10次', 
+    unlocked: userStats.value.productsAvoided >= 10 
   },
   { 
     id: 5, 
-    name: '精打细算', 
-    icon: '🧮', 
-    desc: '累计省下500元', 
-    unlocked: userStats.value.totalSaved >= 500 
+    name: '忍术大师', 
+    icon: '🥷', 
+    desc: '达到上忍段位', 
+    unlocked: userStats.value.level >= 4 
   },
   { 
     id: 6, 
-    name: '超市霸主', 
-    icon: '👑', 
-    desc: '达到火影段位', 
+    name: '富可敌国', 
+    icon: '🏰', 
+    desc: '累计省1000元', 
     unlocked: userStats.value.totalSaved >= 1000 
   }
 ])
@@ -184,4 +280,13 @@ const getColor = (index) => {
   const colors = ['bg-emerald-400', 'bg-teal-400', 'bg-cyan-400', 'bg-sky-400', 'bg-blue-400']
   return colors[index % colors.length]
 }
+
+// 模拟图表数据 (This was part of the instruction, but seems to replace dynamic supermarketStats. Keeping both for now as per strict instruction adherence)
+const topSupermarkets = [
+  { name: '山姆', percent: 80, color: 'bg-emerald-500' },
+  { name: '盒马', percent: 60, color: 'bg-blue-500' },
+  { name: 'Aldi', percent: 45, color: 'bg-indigo-500' },
+  { name: '沃尔玛', percent: 30, color: 'bg-orange-500' },
+  { name: 'Costco', percent: 20, color: 'bg-rose-500' },
+]
 </script>
