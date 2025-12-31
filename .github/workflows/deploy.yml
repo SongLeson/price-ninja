@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # 改为 write 权限以允许推送到 gh-pages 分支
   pages: write
   id-token: write
 
@@ -38,4 +38,6 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          cname: false
+          force_orphan: true  # 强制创建独立的 gh-pages 分支
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
